@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password        String
+  firstName       String
+  lastName        String
+  nativeLanguage  String
+  learningLanguages String[]
+  bio             String?
+  avatarUrl       String?
+  age             Int?
+  hobbies         String[]
+  roleMode        String   @default("learner")
+  credits         Int      @default(0)
+  reliabilityScore Float   @default(100)
+  strikeCount     Int      @default(0)
+  blockedUntil    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  availabilities      Availability[]
+  bookingsAsStudent   Booking[]  @relation("StudentBookings")
+  bookingsAsTeacher   Booking[]  @relation("TeacherBookings")
+  sessionsAsStudent   Session[]  @relation("StudentSessions")
+  sessionsAsTeacher   Session[]  @relation("TeacherSessions")
+  conversationsAsUser1 Conversation[] @relation("ConversationUser1")
+  conversationsAsUser2 Conversation[] @relation("ConversationUser2")
+  messages            Message[]
+  creditTransactions  CreditTransaction[]
+}
+
+model Availability {
+  id        String   @id @default(uuid())
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id])
+  startTimeUTC   DateTime
+  endTimeUTC     DateTime
+  durationMinutes Int
+  creditsAmount   Int
+  isBooked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking?
+
+  @@index([teacherId])
+}
+
+model Booking {
+  id             String        @id @default(uuid())
+  studentId      String
+  student        User          @relation("StudentBookings", fields: [studentId], references: [id])
+  teacherId      String
+  teacher        User          @relation("TeacherBookings", fields: [teacherId], references: [id])
+  availabilityId String        @unique
+  availability   Availability  @relation(fields: [availabilityId], references: [id])
+  status         BookingStatus @default(PENDING)
+  creditsAmount  Int
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  session Session?
+
+  @@index([studentId])
+  @@index([teacherId])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}
+
+model Session {
+  id        String        @id @default(uuid())
+  bookingId String        @unique
+  booking   Booking       @relation(fields: [bookingId], references: [id])
+  studentId String
+  student   User          @relation("StudentSessions", fields: [studentId], references: [id])
+  teacherId String
+  teacher   User          @relation("TeacherSessions", fields: [teacherId], references: [id])
+  status           SessionStatus @default(SCHEDULED)
+  scheduledStartUTC DateTime
+  scheduledEndUTC   DateTime
+  durationMinutes   Int
+  creditsAmount     Int
+  teacherStartedAt  DateTime?
+  studentStartedAt  DateTime?
+  endedAt           DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([studentId])
+  @@index([teacherId])
+}
+
+enum SessionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  NO_SHOW_TEACHER
+  NO_SHOW_STUDENT
+  NO_SHOW_BOTH
+  CANCELLED
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  user1Id   String
+  user1     User      @relation("ConversationUser1", fields: [user1Id], references: [id])
+  user2Id   String
+  user2     User      @relation("ConversationUser2", fields: [user2Id], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  messages Message[]
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model CreditTransaction {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
+  amount    Int
+  type      CreditTransactionType
+  relatedId String?             // bookingId or sessionId
+  createdAt DateTime            @default(now())
+
+  @@index([userId])
+}
+
+enum CreditTransactionType {
+  SESSION_EARN
+  SESSION_SPEND
+  ESCROW_HOLD
+  ESCROW_RELEASE
+  ESCROW_REFUND
+  PURCHASE
+  REFUND
+  BONUS
+}
