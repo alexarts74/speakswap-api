@@ -55,6 +55,24 @@ interface TeacherSearchFilters {
   hobbies?: string[];
 }
 
+export async function getPublicProfile(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      nativeLanguage: true,
+      learningLanguages: true,
+      bio: true,
+      avatarUrl: true,
+      age: true,
+      hobbies: true,
+      reliabilityScore: true,
+    },
+  });
+}
+
 export async function searchTeachers(filters: TeacherSearchFilters, cursor?: string, limit: number = 20) {
   const where: any = {
     roleMode: "teacher",

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getProfile, updateProfile, searchTeachers } from "../services/user.service.js";
+import { getProfile, updateProfile, searchTeachers, getPublicProfile } from "../services/user.service.js";
 
 export async function getMeHandler(req: Request, res: Response) {
   try {
@@ -31,6 +31,19 @@ export async function updateMeHandler(req: Request, res: Response) {
       res.status(400).json({ error: error.message });
       return;
     }
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function getUserHandler(req: Request, res: Response) {
+  try {
+    const user = await getPublicProfile(req.params.id);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json(user);
+  } catch {
     res.status(500).json({ error: "Internal server error" });
   }
 }
