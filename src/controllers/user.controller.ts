@@ -23,7 +23,7 @@ export async function updateMeHandler(req: Request, res: Response) {
       hobbies,
       avatarUrl,
       learningLanguages,
-      roleMode,
+      roleMode
     });
     res.json(user);
   } catch (error: any) {
