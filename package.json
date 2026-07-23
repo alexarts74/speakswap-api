@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "nodemon --exec tsx src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest",
+  "test:run": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +32,8 @@
     "prisma": "^6.19.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

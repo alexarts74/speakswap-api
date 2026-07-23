@@ -147,6 +147,15 @@ export async function rejectBooking(bookingId: string, teacherId: string) {
   });
 }
 
+export function isLateCancellation(
+  startTimeUTC: Date,
+  now: Date = new Date()
+): boolean {
+  const hoursUntilStart =
+    (startTimeUTC.getTime() - now.getTime()) / (1000 * 60 * 60);
+  return hoursUntilStart <= 12;
+}
+
 export async function cancelBooking(bookingId: string, userId: string) {
   return prisma.$transaction(async (tx) => {
     const booking = await tx.booking.findUnique({
@@ -166,16 +175,13 @@ export async function cancelBooking(bookingId: string, userId: string) {
       throw new Error("Booking cannot be cancelled in its current status");
     }
 
-    const hoursUntilStart =
-      (booking.availability.startTimeUTC.getTime() - Date.now()) / (1000 * 60 * 60);
-
-    if (hoursUntilStart > 12) {
-      // Free cancellation
-      await refundCredits(booking.studentId, booking.creditsAmount, bookingId, tx);
-    } else {
+    if (isLateCancellation(booking.availability.startTimeUTC)) {
       // Late cancellation — no refund, credits go to teacher, strike the canceller
       await releaseCredits(booking.teacherId, booking.creditsAmount, bookingId, tx);
       await addStrike(userId, tx);
+    } else {
+      // Free cancellation
+      await refundCredits(booking.studentId, booking.creditsAmount, bookingId, tx);
     }
 
     await tx.booking.update({
